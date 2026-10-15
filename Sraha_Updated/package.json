@@ -1,0 +1,26 @@
+{
+  "name": "Eyad's_solution",
+  "version": "1.0.0",
+  "description": "",
+  "main": "./source/main.js",
+  "scripts": {
+    "start": "node ./source/main.js",
+    "start:dev": "node --watch ./source/main.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "google-auth-library": "^10.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.9.4",
+    "nodemailer": "^7.1.2",
+    "redis": "^6.3.0",
+    "zod": "^4.6.5"
+  }
+}

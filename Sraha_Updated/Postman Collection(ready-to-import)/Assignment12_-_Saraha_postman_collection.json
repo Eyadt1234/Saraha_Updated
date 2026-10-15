@@ -1,0 +1,2146 @@
+{
+  "info": {
+    "_postman_id": "3c7f1a9e-5b2d-4e6a-9f0c-8d2b6a1e4f73",
+    "name": "Assignment12_ContinueOn_11 - Saraha",
+    "description": "Assignment 12 (continues on 11).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    },
+    {
+      "key": "login_challenge_token",
+      "value": ""
+    },
+    {
+      "key": "sender_token",
+      "value": ""
+    },
+    {
+      "key": "receiver_token",
+      "value": ""
+    },
+    {
+      "key": "outsider_token",
+      "value": ""
+    },
+    {
+      "key": "sender_id",
+      "value": ""
+    },
+    {
+      "key": "receiver_id",
+      "value": ""
+    },
+    {
+      "key": "message_id",
+      "value": ""
+    },
+    {
+      "key": "request_id",
+      "value": ""
+    },
+    {
+      "key": "conversation_id",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "1) Auth (Main User)",
+      "item": [
+        {
+          "name": "1 - Signup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "signup"
+              ]
+            },
+            "description": "Creates the main test user. name must be 'First Last', password needs upper+lower+digit (8+ chars) and confirmPassword must match. Returns 400 if the email already exists (that is fine on re-runs).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Eyad Tarek\",\n  \"email\": \"eyad12345@gmail.com\",\n  \"password\": \"Eyad0124!\",\n  \"confirmPassword\": \"Eyad0124!\",\n  \"phone\": \"01023456789\",\n  \"age\": 21,\n  \"gender\": \"male\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signup: 201 created (or 400 if the email already exists)\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "2 - Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login"
+              ]
+            },
+            "description": "Returns access_token + refresh_token and saves them in the collection variables. If 2-step-verification is ON it returns a login_challenge_token instead (see folder 8).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"eyad12345@gmail.com\",\n  \"password\": \"Eyad0124!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login succeeded (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code == 200) {",
+                  "  let response = pm.response.json();",
+                  "  if (response.access_token) {",
+                  "    pm.collectionVariables.set(\"access_token\", response.access_token);",
+                  "    pm.collectionVariables.set(\"refresh_token\", response.refresh_token);",
+                  "  }",
+                  "  if (response.login_challenge_token) {",
+                  "    pm.collectionVariables.set(\"login_challenge_token\", response.login_challenge_token);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "3 - Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "profile"
+              ]
+            },
+            "description": "Returns the logged-in user's data (phone decrypted). First call reads MongoDB and fills the Redis cache."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Profile returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "4 - Profile (Cached)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "profile"
+              ]
+            },
+            "description": "Same request again: now served from the Redis cache (5 minutes). The response must be identical."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Profile returned from cache (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "5 - Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{refresh_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/refresh-token",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "refresh-token"
+              ]
+            },
+            "description": "Swaps the refresh token for a new access_token + refresh_token pair."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Tokens refreshed (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code == 200) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"access_token\", response.access_token);",
+                  "  pm.collectionVariables.set(\"refresh_token\", response.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "2) Test Users (Sender, Receiver, Outsider)",
+      "item": [
+        {
+          "name": "6 - Signup Sender",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "signup"
+              ]
+            },
+            "description": "Creates the test user sendera@gmail.com (Sender). 400 means it already exists (fine on re-runs).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sara Ahmed\",\n  \"email\": \"sendera@gmail.com\",\n  \"password\": \"Eyad0124!\",\n  \"confirmPassword\": \"Eyad0124!\",\n  \"phone\": \"01023456789\",\n  \"age\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signup Sender: 201 created (or 400 if it already exists)\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "7 - Signup Receiver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "signup"
+              ]
+            },
+            "description": "Creates the test user receiverb@gmail.com (Receiver). 400 means it already exists (fine on re-runs).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Omar Hassan\",\n  \"email\": \"receiverb@gmail.com\",\n  \"password\": \"Eyad0124!\",\n  \"confirmPassword\": \"Eyad0124!\",\n  \"phone\": \"01023456789\",\n  \"age\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signup Receiver: 201 created (or 400 if it already exists)\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "8 - Signup Outsider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "signup"
+              ]
+            },
+            "description": "Creates the test user outsiderc@gmail.com (Outsider). 400 means it already exists (fine on re-runs).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Mona Samir\",\n  \"email\": \"outsiderc@gmail.com\",\n  \"password\": \"Eyad0124!\",\n  \"confirmPassword\": \"Eyad0124!\",\n  \"phone\": \"01023456789\",\n  \"age\": 25\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signup Outsider: 201 created (or 400 if it already exists)\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([201, 400]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "9 - Login Sender",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login"
+              ]
+            },
+            "description": "Logs in sendera@gmail.com and saves the token in {{sender_token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"sendera@gmail.com\",\n  \"password\": \"Eyad0124!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login Sender succeeded (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code == 200) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"sender_token\", response.access_token);",
+                  "  const payload = JSON.parse(atob(response.access_token.split(\".\")[1].replace(/-/g, \"+\").replace(/_/g, \"/\")));",
+                  "  pm.collectionVariables.set(\"sender_id\", payload.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "10 - Login Receiver",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login"
+              ]
+            },
+            "description": "Logs in receiverb@gmail.com and saves the token in {{receiver_token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"receiverb@gmail.com\",\n  \"password\": \"Eyad0124!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login Receiver succeeded (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code == 200) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"receiver_token\", response.access_token);",
+                  "  const payload = JSON.parse(atob(response.access_token.split(\".\")[1].replace(/-/g, \"+\").replace(/_/g, \"/\")));",
+                  "  pm.collectionVariables.set(\"receiver_id\", payload.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "11 - Login Outsider",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login"
+              ]
+            },
+            "description": "Logs in outsiderc@gmail.com and saves the token in {{outsider_token}}.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"outsiderc@gmail.com\",\n  \"password\": \"Eyad0124!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login Outsider succeeded (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code == 200 || pm.response.code == 201) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"outsider_token\", response.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3) Anonymous Message - Reject Flow",
+      "item": [
+        {
+          "name": "12 - Send Message (Sender to Receiver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/send/{{receiver_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "send",
+                "{{receiver_id}}"
+              ]
+            },
+            "description": "Sender sends an anonymous message to the receiver. The response never reveals who sent it. Saves message_id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"You are doing great!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Message sent (201)\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code == 200 || pm.response.code == 201) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"message_id\", response.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "13 - Get Inbox (Receiver)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/received",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "received"
+              ]
+            },
+            "description": "Receiver's inbox. sender is null (hidden) and requestStatus is null until an identity request is made."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inbox returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"sender is hidden\", function () {",
+                  "  let message = pm.response.json().messages.find((m) => m._id == pm.collectionVariables.get(\"message_id\"));",
+                  "  pm.expect(message.sender).to.eql(null);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "14 - Request Identity (Receiver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/{{message_id}}/request-identity",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "{{message_id}}",
+                "request-identity"
+              ]
+            },
+            "description": "Receiver asks who sent the message. Creates a request with status pending. Saves request_id."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Identity request created (201)\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "pm.test(\"status is pending\", function () {",
+                  "  pm.expect(pm.response.json().status).to.eql(\"pending\");",
+                  "});",
+                  "if (pm.response.code == 200 || pm.response.code == 201) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"request_id\", response.requestId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "15 - Get Requests (Sender)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests"
+              ]
+            },
+            "description": "Sender sees all identity requests about his messages. Optional filter: ?status=pending|accepted|rejected."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Requests returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "16 - Reject Request (Sender)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests/{{request_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests",
+                "{{request_id}}"
+              ]
+            },
+            "description": "Sender rejects: his identity stays hidden and no conversation is created.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Request rejected (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "17 - Get Inbox After Reject (Receiver)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/received",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "received"
+              ]
+            },
+            "description": "After a reject the sender is still hidden and requestStatus is rejected."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inbox returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"sender still hidden, status rejected\", function () {",
+                  "  let message = pm.response.json().messages.find((m) => m._id == pm.collectionVariables.get(\"message_id\"));",
+                  "  pm.expect(message.sender).to.eql(null);",
+                  "  pm.expect(message.requestStatus).to.eql(\"rejected\");",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4) Anonymous Message - Accept Flow",
+      "item": [
+        {
+          "name": "18 - Send Message 2 (Sender to Receiver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/send/{{receiver_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "send",
+                "{{receiver_id}}"
+              ]
+            },
+            "description": "A second anonymous message, used for the accept flow. Saves message_id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Here is another message for you!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Message sent (201)\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code == 200 || pm.response.code == 201) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"message_id\", response.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "19 - Request Identity 2 (Receiver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/{{message_id}}/request-identity",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "{{message_id}}",
+                "request-identity"
+              ]
+            },
+            "description": "Receiver asks who sent the second message. Saves request_id."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Identity request created (201)\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});",
+                  "if (pm.response.code == 200 || pm.response.code == 201) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"request_id\", response.requestId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "20 - Get Pending Requests (Sender)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests?status=pending",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Sender lists only the requests that are still pending."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Pending requests returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "21 - Accept Request (Sender)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests/{{request_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests",
+                "{{request_id}}"
+              ]
+            },
+            "description": "Sender accepts: status becomes accepted, the receiver can now see who sent the message, and a conversation linked to the message is created. Saves conversation_id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Request accepted (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "if (pm.response.code == 200 || pm.response.code == 201) {",
+                  "  let response = pm.response.json();",
+                  "  pm.collectionVariables.set(\"conversation_id\", response.conversationId);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "22 - Get Inbox After Accept (Receiver)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/received",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "received"
+              ]
+            },
+            "description": "After accepting, the sender's _id, name and email are visible for that message, together with the conversationId."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Inbox returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});",
+                  "pm.test(\"sender revealed + conversationId present\", function () {",
+                  "  let message = pm.response.json().messages.find((m) => m._id == pm.collectionVariables.get(\"message_id\"));",
+                  "  pm.expect(message.sender).to.not.eql(null);",
+                  "  pm.expect(message.requestStatus).to.eql(\"accepted\");",
+                  "  pm.expect(message.conversationId).to.eql(pm.collectionVariables.get(\"conversation_id\"));",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5) Conversation",
+      "item": [
+        {
+          "name": "23 - Send Chat Message (Sender)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/conversations/{{conversation_id}}/messages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "conversations",
+                "{{conversation_id}}",
+                "messages"
+              ]
+            },
+            "description": "Sender writes inside the conversation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hi Omar, it was me!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Chat message sent (201)\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "24 - Send Chat Message (Receiver)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/conversations/{{conversation_id}}/messages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "conversations",
+                "{{conversation_id}}",
+                "messages"
+              ]
+            },
+            "description": "Receiver answers inside the conversation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hi Sara, thank you!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Chat message sent (201)\", function () {",
+                  "  pm.response.to.have.status(201);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "25 - Get Chat Messages (Sender)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/conversations/{{conversation_id}}/messages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "conversations",
+                "{{conversation_id}}",
+                "messages"
+              ]
+            },
+            "description": "Sender reads the conversation (oldest first, 20 per page, ?page=2). mine is true for his own messages."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Chat messages returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "26 - Get Chat Messages (Receiver)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/conversations/{{conversation_id}}/messages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "conversations",
+                "{{conversation_id}}",
+                "messages"
+              ]
+            },
+            "description": "Receiver reads the same conversation."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Chat messages returned (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6) Must Fail (Security & Validation)",
+      "item": [
+        {
+          "name": "27 - Outsider Reads Chat (403)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{outsider_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/conversations/{{conversation_id}}/messages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "conversations",
+                "{{conversation_id}}",
+                "messages"
+              ]
+            },
+            "description": "Only the two users in the conversation can read it, so a third user gets 403."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Outsider is blocked (403)\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "28 - Outsider Sends Chat (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{outsider_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/conversations/{{conversation_id}}/messages",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "conversations",
+                "{{conversation_id}}",
+                "messages"
+              ]
+            },
+            "description": "A third user can't send inside the conversation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Let me in!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Outsider is blocked (403)\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "29 - Sender Requests Identity (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/{{message_id}}/request-identity",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "{{message_id}}",
+                "request-identity"
+              ]
+            },
+            "description": "Only the receiver of a message can ask who sent it."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Sender is blocked (403)\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "30 - Receiver Answers Request (403)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{receiver_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests/{{request_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests",
+                "{{request_id}}"
+              ]
+            },
+            "description": "Only the sender of the message can accept or reject.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"accepted\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Receiver is blocked (403)\", function () {",
+                  "  pm.response.to.have.status(403);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "31 - Answer Request Again (409)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests/{{request_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests",
+                "{{request_id}}"
+              ]
+            },
+            "description": "A request that was already answered can't be answered again.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"rejected\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Already answered (409)\", function () {",
+                  "  pm.response.to.have.status(409);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "32 - Wrong Status (400)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/requests/{{request_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "requests",
+                "{{request_id}}"
+              ]
+            },
+            "description": "Only accepted or rejected are allowed.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"pending\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Wrong status rejected (400)\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "33 - Send Message To Myself (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/send/{{sender_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "send",
+                "{{sender_id}}"
+              ]
+            },
+            "description": "You can't send an anonymous message to yourself.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Hello me\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Self message rejected (400)\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "34 - Send Empty Message (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{sender_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/messages/send/{{receiver_id}}",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "messages",
+                "send",
+                "{{receiver_id}}"
+              ]
+            },
+            "description": "Empty content is rejected by the validation.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"   \"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Empty content rejected (400)\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "35 - Signup Invalid (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/signup",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "signup"
+              ]
+            },
+            "description": "Invalid on purpose: one-word name, bad email, weak password, mismatched confirmPassword, bad phone, age under 18.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"eyad\",\n  \"email\": \"not-an-email\",\n  \"password\": \"abc\",\n  \"confirmPassword\": \"xyz\",\n  \"phone\": \"12345\",\n  \"age\": 17\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Signup rejected (400)\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"errors[] is returned\", function () {",
+                  "  pm.expect(pm.response.json().errors).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "36 - Login Invalid (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login"
+              ]
+            },
+            "description": "Invalid on purpose: malformed email and no password.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"not-an-email\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Login rejected (400)\", function () {",
+                  "  pm.response.to.have.status(400);",
+                  "});",
+                  "pm.test(\"errors[] is returned\", function () {",
+                  "  pm.expect(pm.response.json().errors).to.be.an(\"array\").that.is.not.empty;",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "7) Admin & Logout",
+      "item": [
+        {
+          "name": "37 - List Users (Admin Only)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users?page=1",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                }
+              ]
+            },
+            "description": "Paginated user list. 200 only for a user whose role is admin, any other user gets 403."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"List users: 200 for admin, 403 for a normal user\", function () {",
+                  "  pm.expect(pm.response.code).to.be.oneOf([200, 403]);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "38 - Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/logout",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "logout"
+              ]
+            },
+            "description": "Revokes every token issued before now and clears the cached profile."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Logged out (200)\", function () {",
+                  "  pm.response.to.have.status(200);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "39 - Profile After Logout (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/profile",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "profile"
+              ]
+            },
+            "description": "The old access token is revoked, so this must be 401."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Old token rejected (401)\", function () {",
+                  "  pm.response.to.have.status(401);",
+                  "});"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "8) Manual Steps (OTP & Gmail)",
+      "item": [
+        {
+          "name": "40 - Enable 2FA (Request OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/2fa/enable",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "2fa",
+                "enable"
+              ]
+            },
+            "description": "MANUAL. Run 2 - Login first. Sends a 6-digit OTP to your email (or prints it in the server console)."
+          },
+          "response": []
+        },
+        {
+          "name": "41 - Confirm 2FA (OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{access_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/2fa/confirm",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "2fa",
+                "confirm"
+              ]
+            },
+            "description": "MANUAL. Paste the OTP from 40 to turn 2-step-verification on.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "42 - Login Confirm (OTP)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{login_challenge_token}}"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login/confirm",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login",
+                "confirm"
+              ]
+            },
+            "description": "MANUAL. Only after 2FA is on: run 2 - Login (it returns a login_challenge_token), then paste the new OTP here.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"otp\": \"123456\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let response = pm.response.json();",
+                  "if (response.access_token) {",
+                  "  pm.collectionVariables.set(\"access_token\", response.access_token);",
+                  "  pm.collectionVariables.set(\"refresh_token\", response.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "43 - Login with Gmail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:9000/users/login/gmail",
+              "protocol": "http",
+              "host": [
+                "localhost"
+              ],
+              "port": "9000",
+              "path": [
+                "users",
+                "login",
+                "gmail"
+              ]
+            },
+            "description": "MANUAL. idToken must come from a real Google Sign-In on a frontend, it can't be generated inside Postman.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"paste-the-real-google-id-token-here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "let response = pm.response.json();",
+                  "if (response.access_token) {",
+                  "  pm.collectionVariables.set(\"access_token\", response.access_token);",
+                  "  pm.collectionVariables.set(\"refresh_token\", response.refresh_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
